@@ -132,7 +132,7 @@ extern "C" {
 #endif
 
 #ifndef AL_EXT_MSADPCM
-#define AL_EXT_MSADPCM_1
+#define AL_EXT_MSADPCM 1
 #define AL_FORMAT_MONO_MSADPCM                   0x1302
 #define AL_FORMAT_STEREO_MSADPCM                 0x1303
 #endif
