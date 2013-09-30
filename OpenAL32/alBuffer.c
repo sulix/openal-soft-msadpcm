@@ -1237,7 +1237,7 @@ static void DecodeMSADPCMBlock(ALshort *dst, const ALmsadpcm *src, ALint numchan
 {
     ALubyte predictor[MAX_INPUT_CHANNELS];
     ALshort delta[MAX_INPUT_CHANNELS];
-    ALsizei i,j,curByte = 1;
+    ALsizei i,j;
 
     for(i = 0;i < numchans;i++)
     {
