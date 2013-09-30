@@ -1237,6 +1237,10 @@ static void DecodeMSADPCMBlock(ALshort *dst, const ALmsadpcm *src, ALint numchan
 {
     ALubyte predictor[MAX_INPUT_CHANNELS];
     ALshort delta[MAX_INPUT_CHANNELS];
+    ALshort samples[2 * MAX_INPUT_CHANNELS];
+    ALubyte nibble[2];
+    ALbyte signedNibble;
+    ALint calculatedSample;
     ALsizei i,j;
 
     for(i = 0;i < numchans;i++)
@@ -1245,15 +1249,52 @@ static void DecodeMSADPCMBlock(ALshort *dst, const ALmsadpcm *src, ALint numchan
     }
     for(i = 0;i < numchans;i++)
     {
-        delta[i] = (*(src++) << 8) | (*(src++));
+        delta[i] = (*(src) << 8) | (*(src));
+        src++;
     }
     for(i = 0;i < (numchans * 2);i++)
     {
-        *(dst++) = (*(src++) << 8) | (*(src++));
+        samples[i] = (*(src) << 8) | (*(src));
+        *(dst++) = samples[i];
+        src++;
     }
     for(i = 0;i < (63 * numchans);i++)
     {
-        /* TODO: DecodeMSADPCMBlock, blockAlign decoding. -flibit */
+        nibble[0] = *(src) >> 4;
+        nibble[1] = *(src++) & 0xF;
+        for(j = 0;j < 2;j++)
+        {
+            signedNibble = (ALbyte) nibble[i];
+            if (signedNibble & 0x8)
+            {
+                signedNibble -= 0x10;
+            }
+            calculatedSample = (
+                (
+                    samples[numchans == 2 ? (i * 2) : 0] * MSADPCMAdaptionCoeff1[predictor[numchans == 2 ? i : 0]] +
+                    samples[numchans == 2 ? (i * 2 + 1) : 1] * MSADPCMAdaptionCoeff2[predictor[numchans == 2 ? i : 0]]
+                ) / 256
+            ) + (signedNibble * delta[numchans == 2 ? i : 0]);
+            samples[numchans == 2 ? (i * 2 + 1) : 1] = samples[numchans == 2 ? (i * 2) : 0];
+            if (calculatedSample < -32768)
+            {
+                samples[numchans == 2 ? (i * 2) : 0] = -32768;
+            }
+            else if (calculatedSample > 32767)
+            {
+                samples[numchans == 2 ? (i * 2) : 0] = 32767;
+            }
+            else
+            {
+                samples[numchans == 2 ? (i * 2) : 0] = (ALshort) calculatedSample;
+            }
+            delta[numchans == 2 ? i : 0] = (short) (MSADPCMAdaption[nibble[i]] * delta[numchans == 2 ? i : 0] / 256);
+            if (delta[numchans == 2 ? i : 0] < 16)
+            {
+                delta[numchans == 2 ? i : 0] = 16;
+            }
+            *(dst++) = samples[numchans == 2 ? 2 : 0];
+        }
     }
 }
 
