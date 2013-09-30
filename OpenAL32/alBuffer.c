@@ -1235,12 +1235,34 @@ static void EncodeIMA4Block(ALima4 *dst, const ALshort *src, ALint *sample, ALin
 
 static void DecodeMSADPCMBlock(ALshort *dst, const ALmsadpcm *src, ALint numchans)
 {
-	/* TODO: DecodeMSADPCMBlock -flibit */
+    ALubyte predictor[MAX_INPUT_CHANNELS];
+    ALshort delta[MAX_INPUT_CHANNELS];
+    ALsizei i,j,curByte = 1;
+
+    while(curByte < 69) /* FIXME: WTF is this size supposed to be?! -flibit */
+    {
+        for(i = 0;i < numchans;i++)
+        {
+            predictor[i] = *(src++);
+        }
+        for(i = 0;i < numchans;i++)
+        {
+            delta[i] = (*(src++) << 8) | (*(src++));
+        }
+        for(i = 0;i < (numchans * 2);i++)
+        {
+            *(dst++) = (*(src++) << 8) | (*(src++));
+        }
+        for(i = 0;i < (63 * numchans);i++)
+        {
+            /* TODO: DecodeMSADPCMBlock, blockAlign decoding. -flibit */
+        }
+    }
 }
 
 static void EncodeMSADPCMBlock(ALmsadpcm *dst, const ALshort *src, ALint *sample, ALint *index, ALint numchans)
 {
-	/* TODO: EncodeMSADPCMBlock -flibit */
+    /* TODO: EncodeMSADPCMBlock -flibit */
 }
 
 static inline ALint DecodeByte3(ALbyte3 val)
@@ -1904,7 +1926,7 @@ DECL_TEMPLATE(ALmulaw)
 DECL_TEMPLATE(ALalaw)
 static void Convert_ALmsadpcm_ALmsadpcm(ALmsadpcm *dst, const ALmsadpcm *src,
                                         ALuint numchans, ALuint numblocks)
-{ /* FIXME: Convert_ALmsadpcm_ALmsadpcm, memcpy -flibit */ }
+{ /* TODO: Convert_ALmsadpcm_ALmsadpcm, memcpy -flibit */ }
 DECL_TEMPLATE(ALbyte3)
 DECL_TEMPLATE(ALubyte3)
 
