@@ -391,6 +391,8 @@ static const ALCenums enumeration[] = {
     DECL(AL_FORMAT_STEREO_DOUBLE_EXT),
     DECL(AL_FORMAT_MONO_IMA4),
     DECL(AL_FORMAT_STEREO_IMA4),
+    DECL(AL_FORMAT_MONO_MSADPCM),
+    DECL(AL_FORMAT_STEREO_MSADPCM),
     DECL(AL_FORMAT_QUAD8_LOKI),
     DECL(AL_FORMAT_QUAD16_LOKI),
     DECL(AL_FORMAT_QUAD8),
@@ -649,7 +651,7 @@ static const ALchar alExtList[] =
     "AL_EXT_MULAW_MCFORMATS AL_EXT_OFFSET AL_EXT_source_distance_model "
     "AL_LOKI_quadriphonic AL_SOFT_buffer_samples AL_SOFT_buffer_sub_data "
     "AL_SOFTX_deferred_updates AL_SOFT_direct_channels AL_SOFT_loop_points "
-    "AL_SOFT_source_latency";
+    "AL_SOFT_source_latency AL_EXT_MSADPCM";
 
 static volatile ALCenum LastNullDeviceError = ALC_NO_ERROR;
 

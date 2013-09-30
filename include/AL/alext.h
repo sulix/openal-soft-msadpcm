@@ -131,6 +131,12 @@ extern "C" {
 #define AL_FORMAT_STEREO_IMA4                    0x1301
 #endif
 
+#ifndef AL_EXT_MSADPCM
+#define AL_EXT_MSADPCM_1
+#define AL_FORMAT_MONO_MSADPCM                   0x1302
+#define AL_FORMAT_STEREO_MSADPCM                 0x1303
+#endif
+
 #ifndef AL_EXT_STATIC_BUFFER
 #define AL_EXT_STATIC_BUFFER 1
 typedef ALvoid (AL_APIENTRY*PFNALBUFFERDATASTATICPROC)(const ALint,ALenum,ALvoid*,ALsizei,ALsizei);

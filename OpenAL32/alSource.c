@@ -2575,6 +2575,7 @@ static ALvoid GetSourceOffsets(const ALsource *Source, ALenum name, ALdouble *of
                                            FrameBlockSize * BlockSize);
                 }
             }
+            /* FIXME: UserFmtMSADPCM -flibit */
             else
             {
                 ALuint FrameSize = FrameSizeFromUserFmt(Buffer->OriginalChannels, Buffer->OriginalType);
@@ -2678,6 +2679,7 @@ static ALint GetSampleOffset(ALsource *Source)
             Offset /= 36 * ChannelsFromUserFmt(Buffer->OriginalChannels);
             Offset *= 65;
         }
+        /* FIXME: UserFmtMSADPCM -flibit */
         else
             Offset /= FrameSizeFromUserFmt(Buffer->OriginalChannels, Buffer->OriginalType);
         break;
