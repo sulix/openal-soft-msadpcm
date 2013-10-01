@@ -1293,7 +1293,7 @@ static void DecodeMSADPCMBlock(ALshort *dst, const ALmsadpcm *src, ALint numchan
             {
                 samples[numchans == 2 ? (j * 2) : 0] = (ALshort) calculatedSample;
             }
-            delta[numchans == 2 ? j : 0] = (short) (MSADPCMAdaption[nibble[j]] * delta[numchans == 2 ? j : 0] / 256);
+            delta[numchans == 2 ? j : 0] = (ALshort) (MSADPCMAdaption[nibble[j]] * delta[numchans == 2 ? j : 0] / 256);
             if (delta[numchans == 2 ? j : 0] < 16)
             {
                 delta[numchans == 2 ? j : 0] = 16;
