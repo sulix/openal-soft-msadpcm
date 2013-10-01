@@ -2582,7 +2582,7 @@ static ALvoid GetSourceOffsets(const ALsource *Source, ALenum name, ALdouble *of
                 ALuint FrameBlockSize = 130;
 
                 /* Round down to nearest ADPCM block */
-                offset[0] = (ALduoble)(readPos / FrameBlockSize * BlockSize);
+                offset[0] = (ALdouble)(readPos / FrameBlockSize * BlockSize);
                 if(Source->state != AL_PLAYING)
                     offset[1] = offset[0];
                 else
