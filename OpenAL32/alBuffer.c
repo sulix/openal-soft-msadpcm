@@ -1252,11 +1252,16 @@ static void DecodeMSADPCMBlock(ALshort *dst, const ALmsadpcm *src, ALint numchan
         delta[i] = (*(src) << 8) | (*(src));
         src++;
     }
-    for(i = 0;i < (numchans * 2);i++)
+    for(i = 0;i < (2 * numchans);i += 2)
     {
         samples[i] = (*(src) << 8) | (*(src));
-        *(dst++) = samples[i];
         src++;
+        samples[i + 1] = (*(src) << 8) | (*(src));
+        src++;
+    }
+    for (i = (2 * numchans - 1);i > -1;i--)
+    {
+        *(dst++) = samples[i];
     }
     for(i = 0;i < (63 * numchans);i++)
     {
