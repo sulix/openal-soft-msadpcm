@@ -409,7 +409,24 @@ AL_API ALvoid AL_APIENTRY alBufferData(ALuint buffer, ALenum format, const ALvoi
                 break;
 
             case UserFmtMSADPCM:
-                /* FIXME: UserFmtMSADPCM -flibit */
+                FrameSize = ChannelsFromUserFmt(SrcChannels) * 70;
+                CHECK_VALUE(Context, (size%FrameSize) == 0);
+
+                NewFormat = AL_FORMAT_MONO16;
+                switch(SrcChannels)
+                {
+                    case UserFmtMono: NewFormat = AL_FORMAT_MONO16; break;
+                    case UserFmtStereo: NewFormat = AL_FORMAT_STEREO16; break;
+                    case UserFmtRear: NewFormat = AL_FORMAT_REAR16; break;
+                    case UserFmtQuad: NewFormat = AL_FORMAT_QUAD16; break;
+                    case UserFmtX51: NewFormat = AL_FORMAT_51CHN16; break;
+                    case UserFmtX61: NewFormat = AL_FORMAT_61CHN16; break;
+                    case UserFmtX71: NewFormat = AL_FORMAT_71CHN16; break;
+                }
+                err = LoadData(ALBuf, freq, NewFormat, size/FrameSize*130,
+                               SrcChannels, SrcType, data, AL_TRUE);
+                if(err != AL_NO_ERROR)
+                    al_throwerr(Context, err);
                 break;
         }
     }
@@ -446,7 +463,10 @@ AL_API ALvoid AL_APIENTRY alBufferSubDataSOFT(ALuint buffer, ALenum format, cons
         {
             original_align = ChannelsFromUserFmt(ALBuf->OriginalChannels) * 36;
         }
-        /* FIXME: UserFmtMSADPCM -flibit */
+        if(ALBuf->OriginalType == UserFmtMSADPCM)
+        {
+            original_align = ChannelsFromUserFmt(ALBuf->OriginalChannels) * 70;
+        }
         else
         {
             original_align = FrameSizeFromUserFmt(ALBuf->OriginalChannels,
@@ -473,7 +493,11 @@ AL_API ALvoid AL_APIENTRY alBufferSubDataSOFT(ALuint buffer, ALenum format, cons
             offset = offset/36*65 * Bytes;
             length = length/original_align * 65;
         }
-        /* FIXME: UserFmtMSADPCM -flibit */
+        if(SrcType == UserFmtMSADPCM)
+        {
+            offset = offset/70*130 * Bytes;
+            length = length/original_align * 130;
+        }
         else
         {
             ALuint OldBytes = BytesFromUserFmt(SrcType);
@@ -603,7 +627,7 @@ AL_API void AL_APIENTRY alGetBufferSamplesSOFT(ALuint buffer,
             ReadUnlock(&ALBuf->lock);
             al_throwerr(Context, AL_INVALID_VALUE);
         }
-        else if(type == UserFmtMSADPCM) /* FIXME: UserFmtMSADPCM -flibit */
+        else if(type == UserFmtMSADPCM && (samples%130) != 0)
         {
             ReadUnlock(&ALBuf->lock);
             al_throwerr(Context, AL_INVALID_VALUE);
@@ -2152,7 +2176,8 @@ static ALenum LoadData(ALbuffer *ALBuf, ALuint freq, ALenum NewFormat, ALsizei f
         ALBuf->OriginalType     = SrcType;
         if(SrcType == UserFmtIMA4)
             ALBuf->OriginalSize = frames / 65 * 36 * ChannelsFromUserFmt(SrcChannels);
-        /* FIXME: UserFmtMSADPCM -flibit */
+        else if(SrcType == UserFmtMSADPCM)
+            ALBuf->OriginalSize = frames / 130 * 70 * ChannelsFromUserFmt(SrcChannels);
         else
             ALBuf->OriginalSize = frames * FrameSizeFromUserFmt(SrcChannels, SrcType);
     }
