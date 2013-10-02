@@ -417,11 +417,7 @@ AL_API ALvoid AL_APIENTRY alBufferData(ALuint buffer, ALenum format, const ALvoi
                 {
                     case UserFmtMono: NewFormat = AL_FORMAT_MONO16; break;
                     case UserFmtStereo: NewFormat = AL_FORMAT_STEREO16; break;
-                    case UserFmtRear: NewFormat = AL_FORMAT_REAR16; break;
-                    case UserFmtQuad: NewFormat = AL_FORMAT_QUAD16; break;
-                    case UserFmtX51: NewFormat = AL_FORMAT_51CHN16; break;
-                    case UserFmtX61: NewFormat = AL_FORMAT_61CHN16; break;
-                    case UserFmtX71: NewFormat = AL_FORMAT_71CHN16; break;
+                    default: al_throwerr(Context, AL_INVALID_ENUM);
                 }
                 err = LoadData(ALBuf, freq, NewFormat, size/FrameSize*130,
                                SrcChannels, SrcType, data, AL_TRUE);
