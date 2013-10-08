@@ -1333,7 +1333,7 @@ static void DecodeMSADPCMBlock(ALshort *dst, const ALmsadpcm *src, ALint numchan
         {
             for(j = 0;j < 2;j++)
             {
-                *(dst++) = CalculateMSADPCMSample(nibble[i], predictor[0],
+                *(dst++) = CalculateMSADPCMSample(nibble[j], predictor[0],
                                                   &samples[0], &samples[1], &delta[0]);
             }
         }
