@@ -1974,12 +1974,12 @@ static void Convert_##T##_ALmsadpcm(T *dst, const ALmsadpcm *src,             \
     ALuint i = 0;                                                             \
     ALuint j;                                                                 \
                                                                               \
-    while (i < len)                                                           \
+    while (i < len*numchans)                                                  \
     {                                                                         \
         DecodeMSADPCMBlock(tmp, src, numchans);                               \
         src += 70*numchans;                                                   \
                                                                               \
-        for(j = 0;j < 128*numchans && i < len;j++,i++)                        \
+        for(j = 0;j < 128*numchans && i < len*numchans;j++,i++)               \
         {                                                                     \
             *(dst++) = Conv_##T##_ALshort(tmp[j]);                            \
         }                                                                     \
