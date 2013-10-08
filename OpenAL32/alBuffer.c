@@ -1972,7 +1972,7 @@ static void Convert_##T##_ALmsadpcm(T *dst, const ALmsadpcm *src,             \
 {                                                                             \
     ALshort tmp[128*MAX_INPUT_CHANNELS]; /* Max samples frame can be */       \
     ALuint i = 0;                                                             \
-    ALuint j, k;                                                              \
+    ALuint j;                                                                 \
                                                                               \
     while (i < len)                                                           \
     {                                                                         \
@@ -1981,8 +1981,7 @@ static void Convert_##T##_ALmsadpcm(T *dst, const ALmsadpcm *src,             \
                                                                               \
         for(j = 0;j < 128*numchans && i < len;j++,i++)                        \
         {                                                                     \
-            for(k = 0;k < numchans;k++)                                       \
-                *(dst++) = Conv_##T##_ALshort(tmp[j*numchans + k]);           \
+            *(dst++) = Conv_##T##_ALshort(tmp[j]);                            \
         }                                                                     \
     }                                                                         \
 }
