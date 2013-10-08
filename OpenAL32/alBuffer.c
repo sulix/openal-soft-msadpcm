@@ -1946,7 +1946,21 @@ DECL_TEMPLATE(ALubyte3)
 static void Convert_##T##_ALmsadpcm(T *dst, const ALmsadpcm *src,             \
                                     ALuint numchans, ALuint len)              \
 {                                                                             \
-    /* TODO: Convert_T_ALmsadpcm -flibit */                                   \
+    ALshort tmp[130*MAX_INPUT_CHANNELS]; /* Max samples frame can be */       \
+    ALuint i = 0;                                                             \
+    ALuint j, k;                                                              \
+                                                                              \
+    while (i < len)                                                           \
+    {                                                                         \
+        DecodeMSADPCMBlock(tmp, src, numchans);                               \
+        src += 70*numchans;                                                   \
+                                                                              \
+        for(j = 0;j < 130 && i < len;j++,i++)                                 \
+        {                                                                     \
+            for(k = 0;k < numchans;k++)                                       \
+                *(dst++) = Conv_##T##_ALshort(tmp[j*numchans + k]);           \
+        }                                                                     \
+    }                                                                         \
 }
 
 DECL_TEMPLATE(ALbyte)
@@ -1989,7 +2003,7 @@ DECL_TEMPLATE(ALmulaw)
 DECL_TEMPLATE(ALalaw)
 static void Convert_ALmsadpcm_ALmsadpcm(ALmsadpcm *dst, const ALmsadpcm *src,
                                         ALuint numchans, ALuint numblocks)
-{ /* TODO: Convert_ALmsadpcm_ALmsadpcm, memcpy -flibit */ }
+{ memcpy(dst, src, numblocks*70*numchans); }
 DECL_TEMPLATE(ALbyte3)
 DECL_TEMPLATE(ALubyte3)
 
