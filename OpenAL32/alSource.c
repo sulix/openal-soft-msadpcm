@@ -2577,9 +2577,9 @@ static ALvoid GetSourceOffsets(const ALsource *Source, ALenum name, ALdouble *of
             }
             if (Buffer->OriginalType == UserFmtMSADPCM)
             {
-                /* 70 bytes per raw ADPCM block, 130 bytes (65 samples) per block */
+                /* 70 bytes per raw ADPCM block, 128 samples per block */
                 ALuint BlockSize = 70 * ChannelsFromFmt(Buffer->FmtChannels);
-                ALuint FrameBlockSize = 130;
+                ALuint FrameBlockSize = 128;
 
                 /* Round down to nearest ADPCM block */
                 offset[0] = (ALdouble)(readPos / FrameBlockSize * BlockSize);
@@ -2698,7 +2698,7 @@ static ALint GetSampleOffset(ALsource *Source)
         else if(Buffer->OriginalType == UserFmtMSADPCM)
         {
             Offset /= 70 * ChannelsFromUserFmt(Buffer->OriginalChannels);
-            Offset *= 130;
+            Offset *= 128;
         }
         else
             Offset /= FrameSizeFromUserFmt(Buffer->OriginalChannels, Buffer->OriginalType);

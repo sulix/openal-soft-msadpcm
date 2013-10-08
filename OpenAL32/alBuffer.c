@@ -419,7 +419,7 @@ AL_API ALvoid AL_APIENTRY alBufferData(ALuint buffer, ALenum format, const ALvoi
                     case UserFmtStereo: NewFormat = AL_FORMAT_STEREO16; break;
                     default: al_throwerr(Context, AL_INVALID_ENUM);
                 }
-                err = LoadData(ALBuf, freq, NewFormat, size/FrameSize*130,
+                err = LoadData(ALBuf, freq, NewFormat, size/FrameSize*128,
                                SrcChannels, SrcType, data, AL_TRUE);
                 if(err != AL_NO_ERROR)
                     al_throwerr(Context, err);
@@ -491,8 +491,8 @@ AL_API ALvoid AL_APIENTRY alBufferSubDataSOFT(ALuint buffer, ALenum format, cons
         }
         if(SrcType == UserFmtMSADPCM)
         {
-            offset = offset/70*130 * Bytes;
-            length = length/original_align * 130;
+            offset = offset/70*128 * Bytes;
+            length = length/original_align * 128;
         }
         else
         {
@@ -623,7 +623,7 @@ AL_API void AL_APIENTRY alGetBufferSamplesSOFT(ALuint buffer,
             ReadUnlock(&ALBuf->lock);
             al_throwerr(Context, AL_INVALID_VALUE);
         }
-        else if(type == UserFmtMSADPCM && (samples%130) != 0)
+        else if(type == UserFmtMSADPCM && (samples%128) != 0)
         {
             ReadUnlock(&ALBuf->lock);
             al_throwerr(Context, AL_INVALID_VALUE);
@@ -1253,14 +1253,55 @@ static void EncodeIMA4Block(ALima4 *dst, const ALshort *src, ALint *sample, ALin
     }
 }
 
+static ALshort CalculateMSADPCMSample(ALubyte nibble, ALubyte predictor,
+                                      ALshort *sample1, ALshort *sample2, ALshort *delta)
+{
+    ALshort returnValue;
+    ALint calculatedSample;
+    ALbyte signedNibble = (ALbyte) nibble;
+    if(signedNibble & 0x8)
+    {
+        signedNibble -= 0x10;
+    }
+
+    calculatedSample = (
+        (    ((*sample1) * MSADPCMAdaptionCoeff1[predictor]) +
+             ((*sample2) * MSADPCMAdaptionCoeff2[predictor])
+        ) / 256
+    );
+    calculatedSample += signedNibble * (*delta);
+
+    if(calculatedSample < -32768)
+    {
+        returnValue = -32768;
+    }
+    else if(calculatedSample > 32767)
+    {
+        returnValue = 32767;
+    }
+    else
+    {
+        returnValue = (ALshort) calculatedSample;
+    }
+
+    *sample2 = *sample1;
+    *sample1 = returnValue;
+    *delta = MSADPCMAdaption[nibble] * (*delta) / 256;
+
+    if((*delta) < 16)
+    {
+        *delta = 16;
+    }
+
+    return returnValue;
+}
+
 static void DecodeMSADPCMBlock(ALshort *dst, const ALmsadpcm *src, ALint numchans)
 {
     ALubyte predictor[MAX_INPUT_CHANNELS];
     ALshort delta[MAX_INPUT_CHANNELS];
     ALshort samples[2 * MAX_INPUT_CHANNELS];
     ALubyte nibble[2];
-    ALbyte signedNibble;
-    ALint calculatedSample;
     ALsizei i,j;
 
     for(i = 0;i < numchans;i++)
@@ -1269,56 +1310,39 @@ static void DecodeMSADPCMBlock(ALshort *dst, const ALmsadpcm *src, ALint numchan
     }
     for(i = 0;i < numchans;i++)
     {
-        delta[i] = (*(src) << 8) | (*(src));
-        src++;
+        delta[i] = *(src++);
+	delta[i] |= *(src++) << 8;
     }
     for(i = 0;i < (2 * numchans);i += 2)
     {
-        samples[i] = (*(src) << 8) | (*(src));
-        src++;
-        samples[i + 1] = (*(src) << 8) | (*(src));
-        src++;
+        samples[i] = *(src++);
+        samples[i] |= *(src++) << 8;
+        samples[i + 1] = *(src++);
+        samples[i + 1] |= *(src++) << 8;
     }
-    for (i = (2 * numchans - 1);i > -1;i--)
+    for (i = (2 * numchans - 1);i > -1;i -= 2)
     {
-        *(dst++) = samples[i];
+        *(dst++) = samples[i - 1];
+	*(dst++) = samples[i];
     }
     for(i = 0;i < (63 * numchans);i++)
     {
         nibble[0] = *(src) >> 4;
         nibble[1] = *(src++) & 0xF;
-        for(j = 0;j < 2;j++)
+        if(numchans == 1)
         {
-            signedNibble = (ALbyte) nibble[j];
-            if (signedNibble & 0x8)
+            for(j = 0;j < 2;j++)
             {
-                signedNibble -= 0x10;
+                *(dst++) = CalculateMSADPCMSample(nibble[i], predictor[0],
+                                                  &samples[0], &samples[1], &delta[0]);
             }
-            calculatedSample = (
-                (
-                    samples[numchans == 2 ? (j * 2) : 0] * MSADPCMAdaptionCoeff1[predictor[numchans == 2 ? j : 0]] +
-                    samples[numchans == 2 ? (j * 2 + 1) : 1] * MSADPCMAdaptionCoeff2[predictor[numchans == 2 ? j : 0]]
-                ) / 256
-            ) + (signedNibble * delta[numchans == 2 ? j : 0]);
-            samples[numchans == 2 ? (j * 2 + 1) : 1] = samples[numchans == 2 ? (j * 2) : 0];
-            if (calculatedSample < -32768)
-            {
-                samples[numchans == 2 ? (j * 2) : 0] = -32768;
-            }
-            else if (calculatedSample > 32767)
-            {
-                samples[numchans == 2 ? (j * 2) : 0] = 32767;
-            }
-            else
-            {
-                samples[numchans == 2 ? (j * 2) : 0] = (ALshort) calculatedSample;
-            }
-            delta[numchans == 2 ? j : 0] = (ALshort) (MSADPCMAdaption[nibble[j]] * delta[numchans == 2 ? j : 0] / 256);
-            if (delta[numchans == 2 ? j : 0] < 16)
-            {
-                delta[numchans == 2 ? j : 0] = 16;
-            }
-            *(dst++) = samples[numchans == 2 ? 2 : 0];
+        }
+        else /* numchans == 2 */
+        {
+           *(dst++) = CalculateMSADPCMSample(nibble[0], predictor[0],
+                                             &samples[0], &samples[2], &delta[0]);
+           *(dst++) = CalculateMSADPCMSample(nibble[1], predictor[1],
+                                             &samples[1], &samples[3], &delta[1]);
         }
     }
 }
@@ -1946,7 +1970,7 @@ DECL_TEMPLATE(ALubyte3)
 static void Convert_##T##_ALmsadpcm(T *dst, const ALmsadpcm *src,             \
                                     ALuint numchans, ALuint len)              \
 {                                                                             \
-    ALshort tmp[130*MAX_INPUT_CHANNELS]; /* Max samples frame can be */       \
+    ALshort tmp[128*MAX_INPUT_CHANNELS]; /* Max samples frame can be */       \
     ALuint i = 0;                                                             \
     ALuint j, k;                                                              \
                                                                               \
@@ -1955,7 +1979,7 @@ static void Convert_##T##_ALmsadpcm(T *dst, const ALmsadpcm *src,             \
         DecodeMSADPCMBlock(tmp, src, numchans);                               \
         src += 70*numchans;                                                   \
                                                                               \
-        for(j = 0;j < 130 && i < len;j++,i++)                                 \
+        for(j = 0;j < 128*numchans && i < len;j++,i++)                        \
         {                                                                     \
             for(k = 0;k < numchans;k++)                                       \
                 *(dst++) = Conv_##T##_ALshort(tmp[j*numchans + k]);           \
@@ -2187,7 +2211,7 @@ static ALenum LoadData(ALbuffer *ALBuf, ALuint freq, ALenum NewFormat, ALsizei f
         if(SrcType == UserFmtIMA4)
             ALBuf->OriginalSize = frames / 65 * 36 * ChannelsFromUserFmt(SrcChannels);
         else if(SrcType == UserFmtMSADPCM)
-            ALBuf->OriginalSize = frames / 130 * 70 * ChannelsFromUserFmt(SrcChannels);
+            ALBuf->OriginalSize = frames / 128 * 70 * ChannelsFromUserFmt(SrcChannels);
         else
             ALBuf->OriginalSize = frames * FrameSizeFromUserFmt(SrcChannels, SrcType);
     }
