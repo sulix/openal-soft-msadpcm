@@ -133,8 +133,10 @@ extern "C" {
 
 #ifndef AL_EXT_MSADPCM
 #define AL_EXT_MSADPCM 1
-#define AL_FORMAT_MONO_MSADPCM                   0x1302
-#define AL_FORMAT_STEREO_MSADPCM                 0x1303
+#define AL_FORMAT_MONO_MSADPCM64                 0x1302
+#define AL_FORMAT_STEREO_MSADPCM64               0x1303
+#define AL_FORMAT_MONO_MSADPCM128                0x1304
+#define AL_FORMAT_STEREO_MSADPCM128              0x1305
 #endif
 
 #ifndef AL_EXT_STATIC_BUFFER
