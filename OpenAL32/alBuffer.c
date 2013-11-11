@@ -1285,7 +1285,7 @@ static void EncodeIMA4Block(ALima4 *dst, const ALshort *src, ALint *sample, ALin
     }
 }
 
-static ALshort CalculateMSADPCMSample(ALubyte nibble, ALubyte predictor,
+static  __attribute__((always_inline)) ALshort CalculateMSADPCMSample(ALubyte nibble, ALubyte predictor,
                                       ALshort *sample1, ALshort *sample2, ALshort *delta)
 {
     ALshort returnValue;
@@ -1357,25 +1357,31 @@ static void DecodeMSADPCMBlock(ALshort *dst, const ALubyte *src, ALint numchans,
         *(dst++) = samples[i - 1];
 	*(dst++) = samples[i];
     }
-    for(i = 0;i < (align * numchans);i++)
+    if(numchans == 1)
     {
-        nibble[0] = *(src) >> 4;
-        nibble[1] = *(src++) & 0xF;
-        if(numchans == 1)
+        for(i = 0;i < (align * numchans);i++)
         {
-            for(j = 0;j < 2;j++)
-            {
-                *(dst++) = CalculateMSADPCMSample(nibble[j], predictor[0],
-                                                  &samples[0], &samples[1], &delta[0]);
-            }
+            nibble[0] = *(src) >> 4;
+            nibble[1] = *(src++) & 0xF;
+            *(dst) = CalculateMSADPCMSample(nibble[0], predictor[0],
+                                              &samples[0], &samples[1], &delta[0]);
+            *(dst+1) = CalculateMSADPCMSample(nibble[1], predictor[0],
+                                              &samples[0], &samples[1], &delta[0]);
+            dst += 2;
         }
-        else /* numchans == 2 */
+    }
+    else
+    {
+        for(i = 0;i < (align * numchans);i++)
         {
-           *(dst++) = CalculateMSADPCMSample(nibble[0], predictor[0],
-                                             &samples[0], &samples[2], &delta[0]);
-           *(dst++) = CalculateMSADPCMSample(nibble[1], predictor[1],
-                                             &samples[1], &samples[3], &delta[1]);
-        }
+            nibble[0] = *(src) >> 4;
+            nibble[1] = *(src++) & 0xF;
+            *(dst) = CalculateMSADPCMSample(nibble[0], predictor[0],
+                                              &samples[0], &samples[2], &delta[0]);
+            *(dst+1) = CalculateMSADPCMSample(nibble[1], predictor[1],
+                                              &samples[1], &samples[3], &delta[1]);
+            dst += 2;
+         }
     }
 }
 
