@@ -23,7 +23,8 @@ enum UserFmtType {
     UserFmtAlaw,
     UserFmtIMA4,
     UserFmtMSADPCM64,
-    UserFmtMSADPCM128
+    UserFmtMSADPCM128,
+    UserFmtMSADPCM256
 };
 enum UserFmtChannels {
     UserFmtMono   = AL_MONO_SOFT,

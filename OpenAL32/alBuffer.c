@@ -441,6 +441,23 @@ AL_API ALvoid AL_APIENTRY alBufferData(ALuint buffer, ALenum format, const ALvoi
                 if(err != AL_NO_ERROR)
                     al_throwerr(Context, err);
                 break;
+
+            case UserFmtMSADPCM256:
+                FrameSize = ChannelsFromUserFmt(SrcChannels) * 134;
+                CHECK_VALUE(Context, (size%FrameSize) == 0);
+
+                NewFormat = AL_FORMAT_MONO16;
+                switch(SrcChannels)
+                {
+                    case UserFmtMono: NewFormat = AL_FORMAT_MONO16; break;
+                    case UserFmtStereo: NewFormat = AL_FORMAT_STEREO16; break;
+                    default: al_throwerr(Context, AL_INVALID_ENUM);
+                }
+                err = LoadData(ALBuf, freq, NewFormat, size/FrameSize*256,
+                               SrcChannels, SrcType, data, AL_TRUE);
+                if(err != AL_NO_ERROR)
+                    al_throwerr(Context, err);
+                break;
         }
     }
     al_endtry;
@@ -484,6 +501,10 @@ AL_API ALvoid AL_APIENTRY alBufferSubDataSOFT(ALuint buffer, ALenum format, cons
         {
             original_align = ChannelsFromUserFmt(ALBuf->OriginalChannels) * 70;
         }
+        else if(ALBuf->OriginalType == UserFmtMSADPCM256)
+        {
+            original_align = ChannelsFromUserFmt(ALBuf->OriginalChannels) * 134;
+        }
         else
         {
             original_align = FrameSizeFromUserFmt(ALBuf->OriginalChannels,
@@ -519,6 +540,11 @@ AL_API ALvoid AL_APIENTRY alBufferSubDataSOFT(ALuint buffer, ALenum format, cons
         {
             offset = offset/70*128 * Bytes;
             length = length/original_align * 128;
+        }
+        else if(SrcType == UserFmtMSADPCM256)
+        {
+            offset = offset/134*256 * Bytes;
+            length = length/original_align * 256;
         }
         else
         {
@@ -655,6 +681,11 @@ AL_API void AL_APIENTRY alGetBufferSamplesSOFT(ALuint buffer,
             al_throwerr(Context, AL_INVALID_VALUE);
         }
         else if(type == UserFmtMSADPCM128 && (samples%128) != 0)
+        {
+            ReadUnlock(&ALBuf->lock);
+            al_throwerr(Context, AL_INVALID_VALUE);
+        }
+        else if(type == UserFmtMSADPCM256 && (samples%256) != 0)
         {
             ReadUnlock(&ALBuf->lock);
             al_throwerr(Context, AL_INVALID_VALUE);
@@ -1105,6 +1136,7 @@ typedef ALubyte ALalaw;
 typedef ALubyte ALima4;
 typedef ALubyte ALmsadpcm64;
 typedef ALubyte ALmsadpcm128;
+typedef ALubyte ALmsadpcm256;
 typedef struct {
     ALbyte b[3];
 } ALbyte3;
@@ -1334,7 +1366,7 @@ static void DecodeMSADPCMBlock(ALshort *dst, const ALubyte *src, ALint numchans,
     ALshort delta[MAX_INPUT_CHANNELS];
     ALshort samples[2 * MAX_INPUT_CHANNELS];
     ALubyte nibble[2];
-    ALsizei i,j;
+    ALsizei i;
 
     for(i = 0;i < numchans;i++)
     {
@@ -1364,9 +1396,9 @@ static void DecodeMSADPCMBlock(ALshort *dst, const ALubyte *src, ALint numchans,
             nibble[0] = *(src) >> 4;
             nibble[1] = *(src++) & 0xF;
             *(dst) = CalculateMSADPCMSample(nibble[0], predictor[0],
-                                              &samples[0], &samples[1], &delta[0]);
+                                            &samples[0], &samples[1], &delta[0]);
             *(dst+1) = CalculateMSADPCMSample(nibble[1], predictor[0],
-                                              &samples[0], &samples[1], &delta[0]);
+                                            &samples[0], &samples[1], &delta[0]);
             dst += 2;
         }
     }
@@ -1377,9 +1409,9 @@ static void DecodeMSADPCMBlock(ALshort *dst, const ALubyte *src, ALint numchans,
             nibble[0] = *(src) >> 4;
             nibble[1] = *(src++) & 0xF;
             *(dst) = CalculateMSADPCMSample(nibble[0], predictor[0],
-                                              &samples[0], &samples[2], &delta[0]);
+                                            &samples[0], &samples[2], &delta[0]);
             *(dst+1) = CalculateMSADPCMSample(nibble[1], predictor[1],
-                                              &samples[1], &samples[3], &delta[1]);
+                                            &samples[1], &samples[3], &delta[1]);
             dst += 2;
          }
     }
@@ -2082,6 +2114,47 @@ static void Convert_ALima4_ALmsadpcm128(ALima4 *dst, const ALmsadpcm128 *src,
 #undef DECL_TEMPLATE
 
 #define DECL_TEMPLATE(T)                                                      \
+static void Convert_##T##_ALmsadpcm256(T *dst, const ALmsadpcm256 *src,       \
+                                       ALuint numchans, ALuint len)           \
+{                                                                             \
+    ALshort tmp[256*MAX_INPUT_CHANNELS]; /* Max samples frame can be */       \
+    ALuint i = 0;                                                             \
+    ALuint j;                                                                 \
+                                                                              \
+    while (i < len*numchans)                                                  \
+    {                                                                         \
+        DecodeMSADPCMBlock(tmp, src, numchans, 127);                          \
+        src += 134*numchans;                                                  \
+                                                                              \
+        for(j = 0;j < 256*numchans && i < len*numchans;j++,i++)               \
+        {                                                                     \
+            *(dst++) = Conv_##T##_ALshort(tmp[j]);                            \
+        }                                                                     \
+    }                                                                         \
+}
+
+DECL_TEMPLATE(ALbyte)
+DECL_TEMPLATE(ALubyte)
+DECL_TEMPLATE(ALshort)
+DECL_TEMPLATE(ALushort)
+DECL_TEMPLATE(ALint)
+DECL_TEMPLATE(ALuint)
+DECL_TEMPLATE(ALfloat)
+DECL_TEMPLATE(ALdouble)
+DECL_TEMPLATE(ALmulaw)
+DECL_TEMPLATE(ALalaw)
+DECL_TEMPLATE(ALbyte3)
+DECL_TEMPLATE(ALubyte3)
+
+static void Convert_ALima4_ALmsadpcm256(ALima4 *dst, const ALmsadpcm256 *src,
+                                        ALuint numchans, ALuint len)
+{
+    /* TODO: Convert_ALima4_ALmsadpcm256 -flibit */
+}
+
+#undef DECL_TEMPLATE
+
+#define DECL_TEMPLATE(T)                                                      \
 static void Convert_##T(T *dst, const ALvoid *src, enum UserFmtType srcType,  \
                         ALsizei numchans, ALsizei len)                        \
 {                                                                             \
@@ -2125,6 +2198,9 @@ static void Convert_##T(T *dst, const ALvoid *src, enum UserFmtType srcType,  \
             break;                                                            \
         case UserFmtMSADPCM128:                                               \
             Convert_##T##_ALmsadpcm128(dst, src, numchans, len);              \
+            break;                                                            \
+        case UserFmtMSADPCM256:                                               \
+            Convert_##T##_ALmsadpcm256(dst, src, numchans, len);              \
             break;                                                            \
         case UserFmtByte3:                                                    \
             Convert_##T##_ALbyte3(dst, src, numchans, len);                   \
@@ -2195,6 +2271,9 @@ static void ConvertData(ALvoid *dst, enum UserFmtType dstType, const ALvoid *src
         case UserFmtMSADPCM128:
             /* TODO: MSADPCM128 encoding not supported -flibit */
             break;
+        case UserFmtMSADPCM256:
+            /* TODO: MSADPCM256 encoding not supported -flibit */
+            break;
         case UserFmtByte3:
             Convert_ALbyte3(dst, src, srcType, numchans, len);
             break;
@@ -2261,6 +2340,8 @@ static ALenum LoadData(ALbuffer *ALBuf, ALuint freq, ALenum NewFormat, ALsizei f
             ALBuf->OriginalSize = frames / 64 * 38 * ChannelsFromUserFmt(SrcChannels);
         else if(SrcType == UserFmtMSADPCM128)
             ALBuf->OriginalSize = frames / 128 * 70 * ChannelsFromUserFmt(SrcChannels);
+        else if(SrcType == UserFmtMSADPCM256)
+            ALBuf->OriginalSize = frames / 256 * 134 * ChannelsFromUserFmt(SrcChannels);
         else
             ALBuf->OriginalSize = frames * FrameSizeFromUserFmt(SrcChannels, SrcType);
     }
@@ -2304,6 +2385,7 @@ ALuint BytesFromUserFmt(enum UserFmtType type)
     case UserFmtIMA4: break; /* not handled here */
     case UserFmtMSADPCM64: break; /* not handled here */
     case UserFmtMSADPCM128: break; /* not handled here */
+    case UserFmtMSADPCM256: break; /* not handled here */
     }
     return 0;
 }
@@ -2336,6 +2418,7 @@ static ALboolean DecomposeUserFormat(ALenum format, enum UserFmtChannels *chans,
         { AL_FORMAT_MONO_IMA4,       UserFmtMono, UserFmtIMA4       },
         { AL_FORMAT_MONO_MSADPCM64,  UserFmtMono, UserFmtMSADPCM64  },
         { AL_FORMAT_MONO_MSADPCM128, UserFmtMono, UserFmtMSADPCM128 },
+        { AL_FORMAT_MONO_MSADPCM256, UserFmtMono, UserFmtMSADPCM256 },
         { AL_FORMAT_MONO_MULAW,      UserFmtMono, UserFmtMulaw      },
         { AL_FORMAT_MONO_ALAW_EXT,   UserFmtMono, UserFmtAlaw       },
 
@@ -2346,6 +2429,7 @@ static ALboolean DecomposeUserFormat(ALenum format, enum UserFmtChannels *chans,
         { AL_FORMAT_STEREO_IMA4,       UserFmtStereo, UserFmtIMA4       },
         { AL_FORMAT_STEREO_MSADPCM64,  UserFmtStereo, UserFmtMSADPCM64  },
         { AL_FORMAT_STEREO_MSADPCM128, UserFmtStereo, UserFmtMSADPCM128 },
+        { AL_FORMAT_STEREO_MSADPCM256, UserFmtStereo, UserFmtMSADPCM256 },
         { AL_FORMAT_STEREO_MULAW,      UserFmtStereo, UserFmtMulaw      },
         { AL_FORMAT_STEREO_ALAW_EXT,   UserFmtStereo, UserFmtAlaw       },
 
