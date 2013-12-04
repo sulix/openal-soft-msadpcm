@@ -2244,7 +2244,7 @@ static void Convert_##T##_ALmsadpcm64(T *dst, const ALmsadpcm64 *src,         \
 
 DECL_TEMPLATE(ALbyte)
 DECL_TEMPLATE(ALubyte)
-DECL_TEMPLATE(ALshort)
+//DECL_TEMPLATE(ALshort)
 DECL_TEMPLATE(ALushort)
 DECL_TEMPLATE(ALint)
 DECL_TEMPLATE(ALuint)
@@ -2255,6 +2255,43 @@ DECL_TEMPLATE(ALalaw)
 DECL_TEMPLATE(ALbyte3)
 DECL_TEMPLATE(ALubyte3)
 
+// Optimized version for ALshort (skip the temp buffer)
+static void Convert_ALshort_ALmsadpcm64(ALshort *dst, const ALmsadpcm64 *src,
+                                      ALuint numchans, ALuint len)
+{
+    ALuint i = 0;
+
+    if (numchans == 1)
+    {
+        while (i < len)
+        {
+            DecodeMonoMSADPCMBlock(dst, src, 31);
+            src += 38;
+            dst += 64;
+            i += 64;
+        }
+    }
+    else if (numchans == 2)
+    {
+        while (i < len*2)
+        {
+            DecodeStereoMSADPCMBlock(dst, src, 31);
+            src += 38*2;
+            dst += 128;
+            i += 128;
+        }
+    }
+    else
+    {
+        while (i < len*numchans)
+        {
+            DecodeMSADPCMBlock(dst, src, numchans, 31);
+            src += 38*numchans;
+            dst += 64*numchans;
+            i += 64*numchans;
+        }
+    }
+}
 static void Convert_ALima4_ALmsadpcm64(ALima4 *dst, const ALmsadpcm64 *src,
                                        ALuint numchans, ALuint len)
 {
