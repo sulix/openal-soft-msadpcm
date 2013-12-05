@@ -1421,7 +1421,7 @@ static void DecodeMonoMSADPCMBlock(ALshort *dst, const ALubyte *src, ALint align
     /* 'dst' is an ALshort pointer, so we increment it by 6 ALshort samples */
     dst += 6;
     /* Loop (align-3)/4 times */
-    for(i = 0;i < (align);i++)
+    for(i = 0;i < align;i++)
     {
         /* Read in 4 bytes (8 nibbles) */
         nibble[0] = *(src) >> 4;
@@ -1506,27 +1506,27 @@ static void DecodeStereoMSADPCMBlock(ALshort *dst, const ALubyte *src, ALint ali
     *(dst) = CalculateMSADPCMSample(nibble[0], predictor[0],
                                     &samples[0], &samples[2], &delta[0]);
     *(dst+1) = CalculateMSADPCMSample(nibble[1], predictor[1],
-                                    &samples[1], &samples[3], &delta[1]);
+                                      &samples[1], &samples[3], &delta[1]);
     *(dst+2) = CalculateMSADPCMSample(nibble[2], predictor[0],
-                                    &samples[0], &samples[2], &delta[0]);
+                                      &samples[0], &samples[2], &delta[0]);
     *(dst+3) = CalculateMSADPCMSample(nibble[3], predictor[1],
-                                    &samples[1], &samples[3], &delta[1]);
+                                      &samples[1], &samples[3], &delta[1]);
     *(dst+4) = CalculateMSADPCMSample(nibble[4], predictor[0],
-                                    &samples[0], &samples[2], &delta[0]);
+                                      &samples[0], &samples[2], &delta[0]);
     *(dst+5) = CalculateMSADPCMSample(nibble[5], predictor[1],
-                                    &samples[1], &samples[3], &delta[1]);
+                                      &samples[1], &samples[3], &delta[1]);
     *(dst+6) = CalculateMSADPCMSample(nibble[6], predictor[0],
-                                    &samples[0], &samples[2], &delta[0]);
+                                      &samples[0], &samples[2], &delta[0]);
     *(dst+7) = CalculateMSADPCMSample(nibble[7], predictor[1],
-                                    &samples[1], &samples[3], &delta[1]);
+                                      &samples[1], &samples[3], &delta[1]);
     *(dst+8) = CalculateMSADPCMSample(nibble[8], predictor[0],
-                                    &samples[0], &samples[2], &delta[0]);
+                                      &samples[0], &samples[2], &delta[0]);
     *(dst+9) = CalculateMSADPCMSample(nibble[9], predictor[1],
-                                    &samples[1], &samples[3], &delta[1]);
+                                      &samples[1], &samples[3], &delta[1]);
     *(dst+10) = CalculateMSADPCMSample(nibble[10], predictor[0],
-                                    &samples[0], &samples[2], &delta[0]);
+                                       &samples[0], &samples[2], &delta[0]);
     *(dst+11) = CalculateMSADPCMSample(nibble[11], predictor[1],
-                                    &samples[1], &samples[3], &delta[1]);
+                                       &samples[1], &samples[3], &delta[1]);
     /* ..and increment the pointer */
     dst += 12;
     /* Each loop here will decode 4 bytes */
@@ -1590,7 +1590,7 @@ static void DecodeMSADPCMBlock(ALshort *dst, const ALubyte *src, ALint numchans,
         samples[i + 1] = *(src++);
         samples[i + 1] |= *(src++) << 8;
     }
-    for (i = (2 * numchans - 1);i > -1;i -= 2)
+    for(i = (2 * numchans - 1);i > -1;i -= 2)
     {
         *(dst++) = samples[i - 1];
         *(dst++) = samples[i];
@@ -2309,9 +2309,9 @@ static void Convert_ALshort_ALmsadpcm64(ALshort *dst, const ALmsadpcm64 *src,
 {
     ALuint i = 0;
 
-    if (numchans == 1)
+    if(numchans == 1)
     {
-        while (i < len)
+        while(i < len)
         {
             DecodeMonoMSADPCMBlock(dst, src, 31);
             src += 38;
@@ -2319,9 +2319,9 @@ static void Convert_ALshort_ALmsadpcm64(ALshort *dst, const ALmsadpcm64 *src,
             i += 64;
         }
     }
-    else if (numchans == 2)
+    else if(numchans == 2)
     {
-        while (i < len*2)
+        while(i < len*2)
         {
             DecodeStereoMSADPCMBlock(dst, src, 31);
             src += 38*2;
@@ -2331,7 +2331,7 @@ static void Convert_ALshort_ALmsadpcm64(ALshort *dst, const ALmsadpcm64 *src,
     }
     else
     {
-        while (i < len*numchans)
+        while(i < len*numchans)
         {
             DecodeMSADPCMBlock(dst, src, numchans, 31);
             src += 38*numchans;
@@ -2356,9 +2356,9 @@ static void Convert_##T##_ALmsadpcm128(T *dst, const ALmsadpcm128 *src,       \
     ALuint i = 0;                                                             \
     ALuint j;                                                                 \
                                                                               \
-    if (numchans == 1)                                                        \
+    if(numchans == 1)                                                         \
     {                                                                         \
-        while (i < len*numchans)                                              \
+        while(i < len*numchans)                                               \
         {                                                                     \
             DecodeMonoMSADPCMBlock(tmp, src, 63);                             \
             src += 70;                                                        \
@@ -2369,9 +2369,9 @@ static void Convert_##T##_ALmsadpcm128(T *dst, const ALmsadpcm128 *src,       \
             }                                                                 \
         }                                                                     \
     }                                                                         \
-    else if (numchans == 2)                                                   \
+    else if(numchans == 2)                                                    \
     {                                                                         \
-        while (i < len*2)                                                     \
+        while(i < len*2)                                                      \
         {                                                                     \
             DecodeStereoMSADPCMBlock(tmp, src, 63);                           \
             src += 70*2;                                                      \
@@ -2384,7 +2384,7 @@ static void Convert_##T##_ALmsadpcm128(T *dst, const ALmsadpcm128 *src,       \
     }                                                                         \
     else                                                                      \
     {                                                                         \
-        while (i < len*numchans)                                              \
+        while(i < len*numchans)                                               \
         {                                                                     \
             DecodeMSADPCMBlock(tmp, src, numchans, 63);                       \
             src += 70*numchans;                                               \
@@ -2426,9 +2426,9 @@ static void Convert_##T##_ALmsadpcm256(T *dst, const ALmsadpcm256 *src,       \
     ALuint i = 0;                                                             \
     ALuint j;                                                                 \
                                                                               \
-    if (numchans == 1)                                                        \
+    if(numchans == 1)                                                         \
     {                                                                         \
-        while (i < len)                                                       \
+        while(i < len)                                                        \
         {                                                                     \
             DecodeMonoMSADPCMBlock(tmp, src, 127);                            \
             src += 134;                                                       \
@@ -2439,9 +2439,9 @@ static void Convert_##T##_ALmsadpcm256(T *dst, const ALmsadpcm256 *src,       \
             }                                                                 \
         }                                                                     \
     }                                                                         \
-    else if (numchans == 2)                                                   \
+    else if(numchans == 2)                                                    \
     {                                                                         \
-        while (i < len*2)                                                     \
+        while(i < len*2)                                                      \
         {                                                                     \
             DecodeStereoMSADPCMBlock(tmp, src, 127);                          \
             src += 70*2;                                                      \
@@ -2454,7 +2454,7 @@ static void Convert_##T##_ALmsadpcm256(T *dst, const ALmsadpcm256 *src,       \
     }                                                                         \
     else                                                                      \
     {                                                                         \
-        while (i < len*numchans)                                              \
+        while(i < len*numchans)                                               \
         {                                                                     \
             DecodeMSADPCMBlock(tmp, src, numchans, 127);                      \
             src += 134*numchans;                                              \
