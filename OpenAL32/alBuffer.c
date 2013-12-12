@@ -1388,8 +1388,8 @@ static void DecodeMonoMSADPCMBlock(ALshort *dst, const ALubyte *src, ALint align
     samples[1] = *((ALshort*)(src+2));
     src += 4; /* Two samples at two bytes each */
     /* ... and output them verbatim */
-    *(dst++) = samples[0];
     *(dst++) = samples[1];
+    *(dst++) = samples[0];
 
     /* We are going to be running 3 iterations here, so
      * the final loop needs to run three fewer times.
@@ -1609,9 +1609,12 @@ static void DecodeMSADPCMBlock(ALshort *dst, const ALubyte *src, ALint numchans,
         samples[i + 1] = *(src++);
         samples[i + 1] |= *(src++) << 8;
     }
-    for(i = (2 * numchans - 1);i > -1;i -= 2)
+    for(i = 0;i < numchans;i++)
     {
-        *(dst++) = samples[i - 1];
+        *(dst++) = samples[numchans+i];
+    }
+    for(i = 0;i < numchans;i++)
+    {
         *(dst++) = samples[i];
     }
     if(numchans == 1)
